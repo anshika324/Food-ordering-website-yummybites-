@@ -1,0 +1,59 @@
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yummy-text {
+  font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif, cursive;
+  font-size: 2.3rem;
+  font-weight: 600;
+  color: #ff4d88;
+  letter-spacing: 2px;
+  position: relative;
+  display: inline-block;
+ 
+}
+
+.yummy-text span {
+  display: inline-block;
+  opacity: 100;
+  transform: translateY(20px);
+  animation: bounceIn 0.5s forwards;
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.logo-container::before {
+  content: "🍔";
+  margin-right: 8px;
+  font-size: 1.8rem;
+  animation: pop 1.3s ease-in-out infinite alternate;
+}
+
+.yummy-text:hover {
+  text-shadow: 0 0 15px #ffb6c1, 0 0 30px #ff4d88;
+  transition: 0.3s ease-in-out;
+}
+
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.2);
+  }
+}
