@@ -16,7 +16,7 @@ const Menu = () => {
   useEffect(() => {
     const fetchMenu = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/v1/menu");
+        const res = await fetch("https://food-ordering-website-backend-v7w7.onrender.com/api/v1/menu");
         const data = await res.json();
         console.log("✅ Fetched menu data:", data);
 
@@ -38,7 +38,7 @@ const Menu = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/v1/menu/categories");
+        const res = await fetch("https://food-ordering-website-backend-v7w7.onrender.com/api/v1/menu/categories");
         const data = await res.json();
         if (data.categories) {
           setCategories(["All", ...data.categories]);
@@ -256,5 +256,6 @@ const styles = {
     color: "#666",
   },
 };
+
 
 export default Menu;
