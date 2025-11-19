@@ -44,7 +44,7 @@ razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 # ===============================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # ✅ must match your Vite dev server
+    allow_origins=["*"],  # ✅ must match your Vite dev server
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
