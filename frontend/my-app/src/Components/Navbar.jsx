@@ -17,7 +17,7 @@ const Navbar = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const API_URL = "http://127.0.0.1:8000"; // change if backend runs elsewhere
+  const API_URL = "https://food-ordering-website-backend-v7w7.onrender.com"; // change if backend runs elsewhere
 
   // 🔹 LOGIN Function
   const handleLogin = async () => {
@@ -164,3 +164,4 @@ const Navbar = () => {
 
 
 export default Navbar;
+
