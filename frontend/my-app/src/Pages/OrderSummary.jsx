@@ -12,7 +12,7 @@ const OrderSummary = () => {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const response = await axios.get(`http://localhost:8000/api/v1/order/${order_id}`);
+        const response = await axios.get(`https://food-ordering-website-backend-v7w7.onrender.com/api/v1/order/${order_id}`);
         setOrder(response.data);
       } catch (err) {
         console.error("Error fetching order:", err);
@@ -140,3 +140,4 @@ const styles = {
 };
 
 export default OrderSummary;
+
