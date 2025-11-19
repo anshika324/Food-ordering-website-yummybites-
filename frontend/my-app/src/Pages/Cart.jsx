@@ -70,7 +70,7 @@ const Cart = () => {
     try {
       // 🟢 Create Razorpay order
       const { data } = await axios.post(
-        "http://127.0.0.1:8000/api/v1/payment/create-order",
+        "https://food-ordering-website-backend-v7w7.onrender.com/api/v1/payment/create-order",
         { amount: total }
       );
 
@@ -336,5 +336,6 @@ const modalStyles = {
     zIndex: 1000,
   },
 };
+
 
 export default Cart;
