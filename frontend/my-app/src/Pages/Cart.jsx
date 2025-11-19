@@ -89,7 +89,7 @@ const Cart = () => {
           // ✅ Step 2: Verify payment
           try {
             const verifyRes = await axios.post(
-              "http://127.0.0.1:8000/api/v1/payment/verify",
+              "https://food-ordering-website-backend-v7w7.onrender.com/api/v1/payment/verify",
               {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
@@ -114,7 +114,7 @@ const Cart = () => {
               };
 
               const orderRes = await axios.post(
-                "http://127.0.0.1:8000/api/v1/order/place",
+                "https://food-ordering-website-backend-v7w7.onrender.com/api/v1/order/place",
                 orderPayload
               );
 
@@ -339,3 +339,4 @@ const modalStyles = {
 
 
 export default Cart;
+
