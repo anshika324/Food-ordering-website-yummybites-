@@ -44,7 +44,8 @@ razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 # ===============================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # ✅ must match your Vite dev server
+    allow_origins=["*","https://food-ordering-website-frontend-4gvh.onrender.com",
+        "http://localhost:5173"],  # ✅ must match your Vite dev server
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -213,4 +214,5 @@ async def get_menu():
 app.include_router(order_router)
 app.include_router(payment_router)
 app.include_router(menuRouter)
+
 app.include_router(ai_chat)
