@@ -81,7 +81,7 @@ const ChatWidget = () => {
 
     try {
       const res = await axios.post(
-     "http://127.0.0.1:8000/api/v1/ai/chat",
+     "https://food-ordering-website-backend-v7w7.onrender.com/api/v1/ai/chat",
       { message: text },
       { timeout: 15000 }
       );
@@ -513,4 +513,5 @@ if (typeof document !== "undefined" && !document.getElementById("chatScopedFix")
   style.id = "chatScopedFix";
   style.textContent = chatScopedFix;
   document.head.appendChild(style);
+
 }
