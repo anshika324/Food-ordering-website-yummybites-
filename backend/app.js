@@ -10,7 +10,7 @@ dotenv.config({ path: "./config.env" });
 
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ["https://food-ordering-website-frontend-4gvh.onrender.com"],
     methods: ["POST"],
     credentials: true,
   })
@@ -27,5 +27,6 @@ app.get("/", (req, res, next)=>{return res.status(200).json({
 dbConnection();
 
 app.use(errorMiddleware);
+
 
 export default app;
