@@ -44,10 +44,10 @@ ADMIN_EMAIL             = os.getenv("ADMIN_EMAIL", "admin@yummybites.com")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "*",
-        "https://food-ordering-website-frontend-4gvh.onrender.com",
         "https://yummybites-frontend.vercel.app",
+        "https://food-ordering-website-frontend-4gvh.onrender.com",
         "http://localhost:5173",
+        "http://localhost:3000",
     ],
     allow_credentials=True,
     allow_methods=["*"],
