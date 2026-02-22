@@ -16,25 +16,27 @@ from dotenv import load_dotenv
 
 # Custom imports
 from db import connect_to_mongo, close_mongo_connection, get_database
-from routes.order_routes     import router as order_router
-from routes.payment_routes   import router as payment_router
-from routes.menu_routes      import router as menuRouter
-from routes.ai_chat          import router as ai_chat_router
-from routes.websocket_routes import router as ws_router        # ✅ Real-time order tracking
-from routes.ratings_routes   import router as ratings_router   # ✅ Dish ratings & reviews
-from keep_alive import keep_alive_loop                         # ✅ Render free tier keep-alive
+from routes.order_routes import router as order_router
+from routes.payment_routes import router as payment_router
+from routes.menu_routes import router as menuRouter
+from routes.ai_chat import router as ai_chat_router
+from routes.ratings_routes import router as ratings_router
+from routes.websocket_routes import router as ws_router
 
 load_dotenv()
+
+# Keep-alive for Render free tier (prevents spin-down after 15min inactivity)
+from keep_alive import keep_alive_loop
 
 # ===============================
 # App & Config
 # ===============================
 app = FastAPI(title="YummyBites API", version="2.0")
 
-SECRET_KEY                  = os.getenv("SECRET_KEY", "yummybites_super_secret_jwt_key_2024")
-ALGORITHM                   = "HS256"
+SECRET_KEY              = os.getenv("SECRET_KEY", "yummybites_super_secret_jwt_key_2024")
+ALGORITHM               = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
-ADMIN_EMAIL                 = os.getenv("ADMIN_EMAIL", "admin@yummybites.com")
+ADMIN_EMAIL             = os.getenv("ADMIN_EMAIL", "admin@yummybites.com")
 
 # ===============================
 # CORS
@@ -57,7 +59,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_db():
     await connect_to_mongo()
-    # ✅ Keep-alive pings /health every 10 min to prevent Render spin-down
+    # Start keep-alive background task (no-op in local dev if RENDER_EXTERNAL_URL not set)
     asyncio.create_task(keep_alive_loop())
 
 @app.on_event("shutdown")
@@ -68,9 +70,9 @@ async def shutdown_db():
 async def root():
     return {"message": "Welcome to YummyBites API v2"}
 
-# ✅ Health endpoint pinged by keep_alive.py
 @app.get("/health")
 async def health():
+    """Health check endpoint used by keep-alive pinger."""
     return {"status": "ok"}
 
 # ===============================
@@ -143,11 +145,11 @@ async def signup(user: User):
 
     hashed_pw = bcrypt.hashpw(user.password.encode("utf-8"), bcrypt.gensalt())
     await db["users"].insert_one({
-        "email":      user.email,
-        "name":       user.name or "",
-        "password":   hashed_pw,
+        "email": user.email,
+        "name": user.name or "",
+        "password": hashed_pw,
         "created_at": datetime.utcnow().isoformat(),
-        "role":       "user",
+        "role": "user",
     })
     return {"message": "Account created successfully! Please log in."}
 
@@ -193,8 +195,8 @@ async def send_reservation(reservation: Reservation):
 
     existing = await reservations_collection.find_one({
         "tableNo": reservation.tableNo,
-        "date":    reservation.date,
-        "time":    reservation.time,
+        "date": reservation.date,
+        "time": reservation.time
     })
     if existing:
         raise HTTPException(
@@ -204,11 +206,11 @@ async def send_reservation(reservation: Reservation):
 
     await reservations_collection.insert_one({
         "firstName": reservation.firstName,
-        "lastName":  reservation.lastName,
-        "tableNo":   reservation.tableNo,
-        "phone":     reservation.phone,
-        "date":      reservation.date,
-        "time":      reservation.time,
+        "lastName": reservation.lastName,
+        "tableNo": reservation.tableNo,
+        "phone": reservation.phone,
+        "date": reservation.date,
+        "time": reservation.time,
         "createdAt": datetime.utcnow(),
     })
     return {"message": "Reservation booked successfully!"}
@@ -270,5 +272,5 @@ app.include_router(order_router)
 app.include_router(payment_router)
 app.include_router(menuRouter)
 app.include_router(ai_chat_router)
-app.include_router(ws_router)       # ✅ WebSocket: wss://backend/ws/order/{id}
-app.include_router(ratings_router)  # ✅ Ratings:   /api/v1/ratings/
+app.include_router(ws_router)
+app.include_router(ratings_router)
