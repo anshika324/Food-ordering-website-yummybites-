@@ -1,0 +1,82 @@
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# =========================
+# Environment variables
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+
+# =========================
+# Python build / test
+# =========================
+build/
+dist/
+.eggs/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# =========================
+# Node / React
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# React build output
+# =========================
+frontend/my-app/dist/
+frontend/my-app/build/
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# Cache / temp
+# =========================
+.cache/
+.tmp/
+
+# =========================
+# Git / rebase leftovers
+# =========================
+.git/rebase-apply/
+.git/rebase-merge/
+.git/*.swp
+
+# =========================
+# Media / uploads (if generated)
+# =========================
+uploads/
+tmp/
+
+# =========================
+# Mac specific Python junk
+# =========================
+*.so

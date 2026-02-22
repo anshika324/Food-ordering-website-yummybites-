@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+motor
+pymongo
+python-jose[cryptography]
+bcrypt
+razorpay
+python-dotenv
+pydantic
+httpx
+google-genai
