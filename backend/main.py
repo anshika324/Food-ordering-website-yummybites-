@@ -33,7 +33,7 @@ from keep_alive import keep_alive_loop
 # ===============================
 app = FastAPI(title="YummyBites API", version="2.0")
 
-SECRET_KEY              = os.getenv("SECRET_KEY", "yummybites_super_secret_jwt_key_2024")
+SECRET_KEY              = os.getenv("SECRET_KEY")
 ALGORITHM               = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 ADMIN_EMAIL             = os.getenv("ADMIN_EMAIL", "admin@yummybites.com")
