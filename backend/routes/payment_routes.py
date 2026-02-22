@@ -14,8 +14,8 @@ load_dotenv()
 
 router = APIRouter(prefix="/api/v1/payment", tags=["Payment"])
 
-RAZORPAY_KEY_ID     = os.getenv("RAZORPAY_KEY_ID",     "rzp_test_RZNXWq4xYzFPoa")
-RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET",  "HbCfjmSliM5K4d2AZBl76vEY")
+RAZORPAY_KEY_ID     = os.getenv("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
 
 client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
