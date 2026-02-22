@@ -45,7 +45,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "*",
-        "https://food-ordering-website-frontend-4gvh.onrender.com",
+        "https://yummybites-frontend.vercel.app",
         "http://localhost:5173",
     ],
     allow_credentials=True,
