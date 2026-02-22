@@ -1,16 +1,15 @@
-# backend/gemini_config.py
-
+from google import genai
 import os
-import google.generativeai as genai
+from dotenv import load_dotenv
+
+load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
 if not GEMINI_API_KEY:
-    raise RuntimeError("GEMINI_API_KEY is not set in environment variables")
+    raise RuntimeError("GEMINI_API_KEY is not set in your .env file!")
 
-genai.configure(api_key=GEMINI_API_KEY)
+# ✅ New google-genai client (replaces old google-generativeai library)
+gemini_client = genai.Client(api_key=GEMINI_API_KEY)
 
-GEMINI_MODEL = "models/gemini-1.5-flash"
-
-# ✅ THIS is what ai_chat.py is importing
-gemini_client = genai.GenerativeModel(GEMINI_MODEL)
+# ✅ gemini-2.0-flash: free tier, fast, great for chat/recommendations
+GEMINI_MODEL = "gemini-2.0-flash"
