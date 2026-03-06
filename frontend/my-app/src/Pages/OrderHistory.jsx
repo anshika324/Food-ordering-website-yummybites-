@@ -1,13 +1,13 @@
 // src/Pages/OrderHistory.jsx
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api";
 import { FaHome, FaShoppingBag, FaClock, FaCheckCircle, FaTimesCircle, FaTruck, FaUtensils, FaMoon, FaSun } from "react-icons/fa";
 import CartIcon from "../Components/CartIcon";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+// ✅ REMOVED: const BACKEND_URL — api.js handles baseURL
 const PLACEHOLDER = "https://via.placeholder.com/60?text=Food";
 
 const STATUS_STYLES = {
@@ -36,7 +36,6 @@ const Skeleton = ({ dark }) => (
   </div>
 );
 
-// ── All colours as a function of dark ──
 const makeStyles = (dark) => ({
   page:         { minHeight: "100vh", backgroundColor: dark ? "#0f0f1a" : "#fff7f9", paddingBottom: 60, fontFamily: "Oswald, sans-serif" },
   homeBtn:      { position: "fixed", top: 20, left: 20, background: "#e91e63", color: "#fff", textDecoration: "none", padding: "10px 18px", borderRadius: 30, display: "flex", alignItems: "center", gap: 6, zIndex: 1000, fontSize: 15, boxShadow: "0 3px 10px rgba(0,0,0,0.15)" },
@@ -89,10 +88,14 @@ const OrderHistory = () => {
   const fetchHistory = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/v1/order/history`, { headers: getAuthHeader() });
+      // ✅ api.js: auto-attaches JWT from yb_token + 60s timeout + retry
+      const res = await api.get("/api/v1/order/history");
       setOrders(Array.isArray(res.data) ? res.data : []);
-    } catch { setOrders([]); }
-    finally { setLoading(false); }
+    } catch {
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -102,14 +105,12 @@ const OrderHistory = () => {
       <Link to="/" style={st.homeBtn}><FaHome /> Home</Link>
       <button onClick={toggle} style={st.themeBtn}>{dark ? <FaSun size={14} /> : <FaMoon size={14} />} {dark ? "Light" : "Dark"}</button>
 
-      {/* Header */}
       <div style={st.header}>
         <FaShoppingBag size={36} style={{ marginBottom: 10 }} />
         <h1 style={st.title}>Order History</h1>
         <p style={st.subtitle}>{user?.name ? `Hi ${user.name}!` : ""} All your past orders in one place</p>
       </div>
 
-      {/* Content */}
       <div style={st.container}>
         {loading ? (
           [1,2,3].map(i => <Skeleton key={i} dark={dark} />)
@@ -126,7 +127,6 @@ const OrderHistory = () => {
             const dateStr = new Date(order.timestamp).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
             return (
               <div key={order._id} style={st.card}>
-                {/* Header row */}
                 <div style={st.cardHeader} onClick={() => setExpanded(isOpen ? null : order._id)}>
                   <div style={st.cardLeft}>
                     <span style={st.orderId}>#{order._id.slice(-8).toUpperCase()}</span>
@@ -139,10 +139,8 @@ const OrderHistory = () => {
                   </div>
                 </div>
 
-                {/* Expanded body */}
                 {isOpen && (
                   <div style={st.cardBody}>
-                    {/* Items */}
                     <div>
                       <div style={st.sectionTitle}>Items Ordered</div>
                       {order.items?.map((item, i) => (
@@ -157,7 +155,6 @@ const OrderHistory = () => {
                       ))}
                     </div>
 
-                    {/* Delivery */}
                     {order.delivery_details && (
                       <div>
                         <div style={st.sectionTitle}>Delivery Details</div>
@@ -170,7 +167,6 @@ const OrderHistory = () => {
                       </div>
                     )}
 
-                    {/* Footer */}
                     <div style={st.cardFooter}>
                       <span style={st.grandTotal}>Total Paid: ₹{order.total}</span>
                       <Link to={`/order/${order._id}`} style={st.trackBtn}>Track Order →</Link>

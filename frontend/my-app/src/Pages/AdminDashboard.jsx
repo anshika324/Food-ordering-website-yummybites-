@@ -1,6 +1,6 @@
 // src/Pages/AdminDashboard.jsx
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -9,8 +9,8 @@ import {
 } from "react-icons/fa";
 import { useTheme } from "../context/ThemeContext";
 
-const BACKEND_URL    = import.meta.env.VITE_BACKEND_URL  || "http://localhost:8000";
-const ADMIN_EMAIL    = import.meta.env.VITE_ADMIN_EMAIL  || "admin@yummybites.com";
+// ✅ FIXED: was "token" — must match AuthContext which uses "yb_token"
+const ADMIN_EMAIL    = import.meta.env.VITE_ADMIN_EMAIL || "admin@yummybites.com";
 const STATUS_OPTIONS = ["Pending", "Confirmed", "Preparing", "Out for Delivery", "Delivered", "Cancelled"];
 
 const STATUS_STYLES = {
@@ -39,7 +39,6 @@ const Skeleton = ({ dark }) => (
   </div>
 );
 
-// ── All colours computed from dark — no hardcoded light/dark assumptions ──
 const makeStyles = (dark) => ({
   page:        { minHeight: "100vh", backgroundColor: dark ? "#0f0f1a" : "#f8f9fa", fontFamily: "Oswald, sans-serif", paddingBottom: 60 },
   header:      { background: "linear-gradient(135deg, #1a1a2e, #16213e)", padding: "24px 28px", display: "flex", justifyContent: "space-between", alignItems: "center" },
@@ -85,10 +84,11 @@ const AdminDashboard = () => {
   const [updatingId, setUpdatingId] = useState(null);
   const navigate      = useNavigate();
   const { dark, toggle } = useTheme();
-  const st            = makeStyles(dark);   // recomputed each render — instant theme switch
+  const st            = makeStyles(dark);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    // ✅ FIXED: was localStorage.getItem("token") — now correctly "yb_token"
+    const token = localStorage.getItem("yb_token");
     if (!token) { toast.error("Please log in first."); navigate("/"); return; }
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
@@ -97,28 +97,31 @@ const AdminDashboard = () => {
     fetchOrders();
   }, []);
 
-  const getHeader = () => {
-    const token = localStorage.getItem("token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  };
-
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/v1/admin/orders`, { headers: getHeader() });
+      // ✅ api.js auto-attaches token from yb_token + 60s timeout
+      const res = await api.get("/api/v1/admin/orders");
       setOrders(res.data);
-    } catch { toast.error("Failed to load orders."); }
-    finally { setLoading(false); }
+    } catch (err) {
+      toast.error("Failed to load orders.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateStatus = async (orderId, newStatus) => {
     setUpdatingId(orderId);
     try {
-      await axios.patch(`${BACKEND_URL}/api/v1/order/${orderId}/status`, { status: newStatus }, { headers: getHeader() });
+      // ✅ api.js auto-attaches token + 60s timeout
+      await api.patch(`/api/v1/order/${orderId}/status`, { status: newStatus });
       setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: newStatus } : o));
       toast.success(`Status → "${newStatus}"`);
-    } catch { toast.error("Failed to update status."); }
-    finally { setUpdatingId(null); }
+    } catch {
+      toast.error("Failed to update status.");
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
   const totalRevenue  = orders.filter(o => o.status === "Delivered").reduce((a, o) => a + (o.total || 0), 0);
@@ -138,7 +141,6 @@ const AdminDashboard = () => {
     <div style={st.page}>
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
 
-      {/* Header */}
       <div style={st.header}>
         <Link to="/" style={st.homeBtn}><FaHome /> Home</Link>
         <div>
@@ -146,14 +148,11 @@ const AdminDashboard = () => {
           <p style={st.subtitle}>YummyBites Order Management</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={toggle} style={st.iconBtn} title="Toggle dark mode">
-            {dark ? <FaSun size={14} /> : <FaMoon size={14} />}
-          </button>
+          <button onClick={toggle} style={st.iconBtn}>{dark ? <FaSun size={14} /> : <FaMoon size={14} />}</button>
           <button onClick={fetchOrders} style={st.iconBtn}>↻ Refresh</button>
         </div>
       </div>
 
-      {/* Stats */}
       <div style={st.statsRow}>
         {[
           { icon: <FaBoxOpen size={28} color="#e91e63" />,   val: orders.length,                 label: "Total Orders",        clr: "#e91e63" },
@@ -169,7 +168,6 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-      {/* Controls */}
       <div style={st.controls}>
         <input type="text" placeholder="Search by order ID, email or name..." value={search} onChange={e => setSearch(e.target.value)} style={st.searchInput} />
         <div style={st.filterTabs}>
@@ -180,7 +178,6 @@ const AdminDashboard = () => {
       </div>
       <p style={st.countText}>Showing {displayed.length} of {orders.length} orders</p>
 
-      {/* List */}
       <div style={st.list}>
         {loading ? [1,2,3,4].map(i => <Skeleton key={i} dark={dark} />) : displayed.length === 0 ? (
           <div style={st.empty}>No orders found.</div>
@@ -203,7 +200,6 @@ const AdminDashboard = () => {
 
               {isOpen && (
                 <div style={st.cardBody}>
-                  {/* Items */}
                   <div>
                     <div style={st.sectionTitle}>Items ({order.items?.length || 0})</div>
                     {order.items?.map((item, i) => (
@@ -217,7 +213,6 @@ const AdminDashboard = () => {
                     <div style={st.totalLine}>Total: ₹{order.total}</div>
                   </div>
 
-                  {/* Delivery */}
                   <div>
                     <div style={st.sectionTitle}>Delivery Details</div>
                     <div style={st.bodyText}>
@@ -228,7 +223,6 @@ const AdminDashboard = () => {
                     </div>
                   </div>
 
-                  {/* Status */}
                   <div>
                     <div style={st.sectionTitle}>Update Status</div>
                     <div style={st.statusBtns}>

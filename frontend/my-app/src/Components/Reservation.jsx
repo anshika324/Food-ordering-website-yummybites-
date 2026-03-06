@@ -1,11 +1,9 @@
 // src/Components/Reservation.jsx
 import React, { useState } from "react";
 import { HiOutlineArrowNarrowRight } from "react-icons/hi";
-import axios from "axios";
+import api from "../api";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 
 const Reservation = () => {
   const [firstName, setFirstName] = useState("");
@@ -16,13 +14,31 @@ const Reservation = () => {
   const [phone,     setPhone]     = useState("");
   const navigate = useNavigate();
 
+  // ── Validation helpers ───────────────────────────────────────────────────
+  const isValidName  = (n) => /^[a-zA-Z\s]{2,30}$/.test(n.trim());
+  const isValidPhone = (p) => /^[0-9]{10}$/.test(p.replace(/[\s\-]/g, ""));
+
   const handleReservation = async (e) => {
     e.preventDefault();
+
+    // Client-side validation before hitting the server
+        if (!firstName.trim() || !lastName.trim() || !tableNo || !phone.trim() || !date || !time) {
+          toast.error("Please fill in all fields."); return;
+        }
+        if (!isValidName(firstName)) { toast.error("First name: letters only, 2–30 characters."); return; }
+        if (!isValidName(lastName))  { toast.error("Last name: letters only, 2–30 characters."); return; }
+        if (Number(tableNo) < 1 || Number(tableNo) > 100) { toast.error("Table number must be between 1 and 100."); return; }
+        if (!isValidPhone(phone))    { toast.error("Enter a valid 10-digit phone number."); return; }
+    
+        // Date must not be in the past
+        const selected = new Date(date);
+        const today    = new Date(); today.setHours(0, 0, 0, 0);
+        if (selected < today)        { toast.error("Please select today or a future date."); return; }
+    
     try {
-      const { data } = await axios.post(
-        `${BACKEND_URL}/api/v1/reservation/send`,
-        { firstName, lastName, tableNo, phone, date, time },
-        { headers: { "Content-Type": "application/json" } }
+      const { data } = await api.post(
+              "/api/v1/reservation/send",
+              { firstName: firstName.trim(), lastName: lastName.trim(), tableNo, phone: phone.trim(), date, time }
       );
       toast.success(data.message);
       setFirstName(""); setLastName(""); setTableNo("");

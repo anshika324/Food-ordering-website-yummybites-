@@ -1,75 +1,67 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
-import axios from "axios";
-import toast from "react-hot-toast";
+import api, { wakeBackend } from "../api";
 
-const AuthContext = createContext();
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);       // { email, name }
-  const [loading, setLoading] = useState(true); // true while checking saved token
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // ─── On app load: check if a valid token exists in localStorage ───
+  // On mount: wake backend + restore session from localStorage
   useEffect(() => {
-    const checkToken = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) { setLoading(false); return; }
-      try {
-        const res = await axios.get(`${BACKEND_URL}/user/me`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUser(res.data); // { email, name }
-      } catch {
-        // Token expired or invalid — clear it
-        localStorage.removeItem("token");
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkToken();
+    wakeBackend(); // silent ping so Render warms up immediately
+
+    const token = localStorage.getItem("yb_token");
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    // Validate stored token
+    api
+      .get("/user/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setUser(res.data))
+      .catch(() => {
+        localStorage.removeItem("yb_token"); // expired / invalid
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  // ─── Login ───
+  // ── Login ─────────────────────────────────────────────────────────────────
   const login = async (email, password) => {
-    const res = await axios.post(`${BACKEND_URL}/login`, { email, password });
-    const token = res.data.access_token;
-    localStorage.setItem("token", token);
+    const res = await api.post("/login", { email, password });
+    const { access_token } = res.data;
+    localStorage.setItem("yb_token", access_token);
 
-    // Fetch user profile right after login
-    const userRes = await axios.get(`${BACKEND_URL}/user/me`, {
-      headers: { Authorization: `Bearer ${token}` }
+    // Fetch full user profile
+    const me = await api.get("/user/me", {
+      headers: { Authorization: `Bearer ${access_token}` },
     });
-    setUser(userRes.data);
-    toast.success(`Welcome back, ${userRes.data.name || userRes.data.email}! 👋`);
+    setUser(me.data);
+    return me.data;
   };
 
-  // ─── Signup ───
+  // ── Signup ────────────────────────────────────────────────────────────────
   const signup = async (name, email, password) => {
-    await axios.post(`${BACKEND_URL}/signup`, { name, email, password });
-    toast.success("Account created! Please log in.");
+    await api.post("/signup", { name, email, password });
+    // After signup, auto-login
+    return login(email, password);
   };
 
-  // ─── Logout ───
+  // ── Logout ────────────────────────────────────────────────────────────────
   const logout = () => {
-    localStorage.removeItem("token");
+    localStorage.removeItem("yb_token");
     setUser(null);
-    toast.success("Logged out successfully.");
-  };
-
-  // ─── Get auth header for protected API calls ───
-  const getAuthHeader = () => {
-    const token = localStorage.getItem("token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, getAuthHeader }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Custom hook — use this anywhere in the app
 export const useAuth = () => useContext(AuthContext);

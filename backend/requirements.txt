@@ -9,3 +9,4 @@ python-dotenv
 pydantic
 httpx
 google-genai
+websockets

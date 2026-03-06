@@ -1,6 +1,6 @@
 // src/Pages/Cart.jsx
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { FaHome, FaShoppingCart, FaMoon, FaSun } from "react-icons/fa";
@@ -11,10 +11,8 @@ import { useTheme } from "../context/ThemeContext";
 
 Modal.setAppElement("#root");
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
 const PLACEHOLDER = "https://via.placeholder.com/80?text=Food";
 
-// ── All styles as a function of dark ──
 const makeStyles = (dark) => ({
   container:  { padding: "80px 30px 60px", backgroundColor: dark ? "#0f0f1a" : "#fff7f9", minHeight: "100vh", fontFamily: "Oswald, sans-serif" },
   emptyPage:  { backgroundColor: dark ? "#0f0f1a" : "#fff7f9", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" },
@@ -62,11 +60,18 @@ const Cart = () => {
   const [showModal, setShowModal] = useState(false);
   const [paying, setPaying]       = useState(false);
   const [deliveryDetails, setDeliveryDetails] = useState({ name: "", phone: "", address: "", instructions: "" });
+  const [fieldErrors, setFieldErrors]         = useState({});   // tracks which fields are invalid
+
+  // clears error for a field when user starts typing
+  const handleField = (field, value) => {
+    setDeliveryDetails(d => ({ ...d, [field]: value }));
+    if (fieldErrors[field]) setFieldErrors(e => ({ ...e, [field]: false }));
+  };
 
   const navigate = useNavigate();
   const { user, getAuthHeader } = useAuth();
   const { dark, toggle }        = useTheme();
-  const st = makeStyles(dark);   // recomputed each render — instant theme
+  const st = makeStyles(dark);
 
   useEffect(() => {
     const storedCart = JSON.parse(localStorage.getItem("cart")) || [];
@@ -101,46 +106,86 @@ const Cart = () => {
     setShowModal(true);
   };
 
-  const handlePayment = async () => {
+  // ── Delivery validation helpers ──────────────────────────────────────────
+  const validateDelivery = () => {
     const { name, phone, address } = deliveryDetails;
-    if (!name || !phone || !address) { toast.error("Please fill all required fields!"); return; }
+    const errs = {};
+    if (!name.trim() || !/^[a-zA-Z\s]{2,50}$/.test(name.trim())) errs.name = true;
+    if (!phone.trim() || !/^[0-9]{10}$/.test(phone.replace(/[\s\-]/g, ""))) errs.phone = true;
+    if (!address.trim() || address.trim().length < 10) errs.address = true;
+
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(errs);
+      if (errs.name)    toast.error("Name: letters only, 2–50 characters.");
+      else if (errs.phone)   toast.error("Phone: enter a valid 10-digit number.");
+      else if (errs.address) toast.error("Address must be at least 10 characters.");
+      return false;
+    }
+    setFieldErrors({});
+    return true;
+  };
+
+  const handlePayment = async () => {
+    if (!validateDelivery()) return;
+    const { name, phone, address } = deliveryDetails;
     setPaying(true);
     try {
-      const { data } = await axios.post(`${BACKEND_URL}/api/v1/payment/create-order`, { amount: total });
+      // ✅ api.js: 60s timeout — critical for Razorpay on slow mobile connections
+      const { data } = await api.post("/api/v1/payment/create-order", { amount: total });
+
       const options = {
         key: data.key, amount: data.amount, currency: data.currency,
         name: "YummyBites", description: "Secure Food Payment", order_id: data.order_id,
         handler: async function (response) {
           try {
-            const verifyRes = await axios.post(`${BACKEND_URL}/api/v1/payment/verify`, {
+            // ✅ api.js: 60s timeout on verification too
+            const verifyRes = await api.post("/api/v1/payment/verify", {
               razorpay_order_id:   response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature:  response.razorpay_signature,
             });
+
             if (verifyRes.data.status === "success") {
               toast.success("✅ Payment verified!");
-              const orderRes = await axios.post(`${BACKEND_URL}/api/v1/order/place`, {
-                items: cart.map(item => ({ _id: item._id, name: item.name, price: Number(String(item.price).replace("₹", "").trim()), quantity: item.quantity, image: item.image })),
-                total, deliveryDetails,
-              }, { headers: getAuthHeader() });
+              // ✅ api.js: auto-attaches JWT + 60s timeout
+              const orderRes = await api.post("/api/v1/order/place", {
+                items: cart.map(item => ({
+                  _id: item._id, name: item.name,
+                  price: Number(String(item.price).replace("₹", "").trim()),
+                  quantity: item.quantity, image: item.image,
+                })),
+                total,
+                deliveryDetails,
+              });
               if (orderRes.status === 200) {
                 toast.success("🍽️ Order placed successfully!");
-                clearCart(); setShowModal(false);
+                clearCart();
+                setShowModal(false);
                 navigate(`/order/${orderRes.data.order_id}`);
-              } else { toast.error("⚠️ Order could not be saved!"); }
-            } else { toast.error("❌ Payment verification failed!"); }
-          } catch { toast.error("❌ Payment verification failed!"); }
+              } else {
+                toast.error("⚠️ Order could not be saved!");
+              }
+            } else {
+              toast.error("❌ Payment verification failed!");
+            }
+          } catch {
+            toast.error("❌ Payment verification failed!");
+          }
         },
         prefill: { name: deliveryDetails.name, contact: deliveryDetails.phone },
         theme: { color: "#FF69B4" },
         modal: { ondismiss: () => setPaying(false) },
       };
+
       const paymentObject = new window.Razorpay(options);
       paymentObject.open();
-    } catch { toast.error("Payment failed! Please try again."); setPaying(false); }
+    } catch (err) {
+      const isTimeout = err.code === "ECONNABORTED" || err.code === "ERR_NETWORK" || !err.response;
+      toast.error(isTimeout ? "⏳ Connection slow — please try again." : "Payment failed! Please try again.");
+      setPaying(false);
+    }
   };
 
-  // ── Empty state ──
   if (cart.length === 0) {
     return (
       <div style={st.emptyPage}>
@@ -192,17 +237,18 @@ const Cart = () => {
         </div>
       </div>
 
-      {/* Delivery Modal */}
       <Modal isOpen={showModal} onRequestClose={() => setShowModal(false)} style={{ content: st.modalContent, overlay: modalOverlay }} contentLabel="Delivery Details">
         <h2 style={st.modalTitle}>Delivery Details 🏠</h2>
         <p style={st.modalHint}>We'll deliver to this address</p>
-        <input type="text" placeholder="Full Name *" name="delivery-name" autoComplete="name" value={deliveryDetails.name} onChange={e => setDeliveryDetails({ ...deliveryDetails, name: e.target.value })} style={st.modalInput} />
-        <input type="tel" placeholder="Phone Number *" name="delivery-phone" autoComplete="tel" value={deliveryDetails.phone} onChange={e => setDeliveryDetails({ ...deliveryDetails, phone: e.target.value })} style={st.modalInput} />
-        <textarea placeholder="Delivery Address *" value={deliveryDetails.address} onChange={e => setDeliveryDetails({ ...deliveryDetails, address: e.target.value })} style={{ ...st.modalInput, height: 70, resize: "none" }} />
-        <textarea placeholder="Delivery Instructions (optional)" value={deliveryDetails.instructions} onChange={e => setDeliveryDetails({ ...deliveryDetails, instructions: e.target.value })} style={{ ...st.modalInput, height: 60, resize: "none" }} />
+        <input type="text"    placeholder="Full Name *"        name="delivery-name"  autoComplete="name" value={deliveryDetails.name}         onChange={e => handleField("name", e.target.value)}         style={{ ...st.modalInput, borderColor: fieldErrors.name ? "#e53935" : undefined }} />
+        <input type="tel"     placeholder="Phone Number *"     name="delivery-phone" autoComplete="tel"  value={deliveryDetails.phone}        onChange={e => handleField("phone", e.target.value)}        style={{ ...st.modalInput, borderColor: fieldErrors.phone ? "#e53935" : undefined }} />
+        <textarea             placeholder="Delivery Address *"                                            value={deliveryDetails.address}      onChange={e => handleField("address", e.target.value)}      style={{ ...st.modalInput, height: 70, resize: "none", borderColor: fieldErrors.address ? "#e53935" : undefined }} />
+        <textarea             placeholder="Delivery Instructions (optional)"                              value={deliveryDetails.instructions} onChange={e => setDeliveryDetails({ ...deliveryDetails, instructions: e.target.value })} style={{ ...st.modalInput, height: 60, resize: "none" }} />
         <div style={st.actions}>
           <button onClick={() => setShowModal(false)} style={st.clearBtn}>Cancel</button>
-          <button onClick={handlePayment} style={st.checkoutBtn} disabled={paying}>{paying ? "Processing..." : "Pay & Confirm 🚀"}</button>
+          <button onClick={handlePayment} style={st.checkoutBtn} disabled={paying}>
+            {paying ? "Processing..." : "Pay & Confirm 🚀"}
+          </button>
         </div>
       </Modal>
     </>

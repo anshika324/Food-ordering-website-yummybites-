@@ -62,11 +62,17 @@ const Navbar = () => {
     return () => document.removeEventListener("click", close);
   }, [show]);
 
+  // ── Validation helpers ───────────────────────────────────────────────────
+  const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e.trim());
+  const isValidName  = (n) => /^[a-zA-Z\s]{2,50}$/.test(n.trim());
+
   const handleLogin = async () => {
-    if (!email || !password) { toast.error("Please fill in all fields."); return; }
+    if (!email.trim() || !password)  { toast.error("Please fill in all fields."); return; }
+    if (!isValidEmail(email))         { toast.error("Enter a valid email  e.g. user@gmail.com"); return; }
+    if (password.length < 6)          { toast.error("Password must be at least 6 characters."); return; }
     setSubmitting(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       setShowModal(false);
       setEmail(""); setPassword("");
     } catch (err) {
@@ -75,11 +81,14 @@ const Navbar = () => {
   };
 
   const handleSignup = async () => {
-    if (!name || !email || !password) { toast.error("Please fill in all fields."); return; }
-    if (password.length < 6) { toast.error("Password must be at least 6 characters."); return; }
+    if (!name.trim() || !email.trim() || !password) { toast.error("Please fill in all fields."); return; }
+    if (!isValidName(name))    { toast.error("Name must be letters only, 2–50 characters."); return; }
+    if (!isValidEmail(email))  { toast.error("Enter a valid email  e.g. user@gmail.com"); return; }
+    if (password.length < 6)   { toast.error("Password must be at least 6 characters."); return; }
+    if (!/[A-Za-z]/.test(password)) { toast.error("Password must contain at least one letter."); return; }
     setSubmitting(true);
     try {
-      await signup(name, email, password);
+      await signup(name.trim(), email.trim(), password);
       setIsLogin(true);
       setName(""); setEmail(""); setPassword("");
     } catch (err) {
