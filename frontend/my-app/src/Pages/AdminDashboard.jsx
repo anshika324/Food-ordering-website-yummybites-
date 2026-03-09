@@ -8,6 +8,7 @@ import {
   FaCheckCircle, FaClock, FaTimesCircle, FaTruck, FaUtensils, FaMoon, FaSun
 } from "react-icons/fa";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
 
 // ✅ FIXED: was "token" — must match AuthContext which uses "yb_token"
 const ADMIN_EMAIL    = import.meta.env.VITE_ADMIN_EMAIL || "admin@yummybites.com";
@@ -82,20 +83,19 @@ const AdminDashboard = () => {
   const [search, setSearch]         = useState("");
   const [expanded, setExpanded]     = useState(null);
   const [updatingId, setUpdatingId] = useState(null);
-  const navigate      = useNavigate();
+  const navigate         = useNavigate();
   const { dark, toggle } = useTheme();
-  const st            = makeStyles(dark);
+  const { user, loading: authLoading } = useAuth();   // ✅ renamed to avoid conflict with orders loading
+  const st               = makeStyles(dark);
 
   useEffect(() => {
-    // ✅ FIXED: was localStorage.getItem("token") — now correctly "yb_token"
-    const token = localStorage.getItem("yb_token");
-    if (!token) { toast.error("Please log in first."); navigate("/"); return; }
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      if (payload.sub !== ADMIN_EMAIL) { toast.error("Admin access only."); navigate("/"); return; }
-    } catch { navigate("/"); return; }
+    if (authLoading) return;   // wait for auth to resolve before checking
+    if (!user) { toast.error("Please log in first."); navigate("/"); return; }
+    const isAdmin = user.email?.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim();
+    console.log("[AdminDashboard check]", user.email, "vs", ADMIN_EMAIL, "→", isAdmin);
+    if (!isAdmin) { toast.error("Admin access only."); navigate("/"); return; }
     fetchOrders();
-  }, []);
+  }, [user, authLoading]);
 
   const fetchOrders = async () => {
     setLoading(true);
