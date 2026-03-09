@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 import { AuthProvider }  from './context/AuthContext';
-import { ThemeProvider } from './context/ThemeContext'; // ✅ Dark mode provider
+import { ThemeProvider } from './context/ThemeContext';
 
 import Home           from './Pages/Home';
 import NotFound       from './Pages/NotFound';
@@ -20,10 +20,19 @@ import './App.css';
 
 const App = () => {
   return (
-    // ✅ ThemeProvider wraps everything so any page can call useTheme()
     <ThemeProvider>
       <AuthProvider>
         <Router>
+          {/* ✅ Toaster INSIDE Router so all toast() calls from any page/component work */}
+          <Toaster
+            position="top-center"
+            reverseOrder={false}
+            toastOptions={{
+              duration: 3000,
+              style: { fontFamily: 'Oswald, sans-serif', fontSize: '15px' },
+              success: { iconTheme: { primary: '#0fe312ff', secondary: '#fff' } },
+            }}
+          />
           <Routes>
             <Route path='/'                element={<Home />} />
             <Route path='/menu'            element={<Menu />} />
@@ -36,14 +45,6 @@ const App = () => {
             <Route path='*'               element={<NotFound />} />
           </Routes>
         </Router>
-        <Toaster
-          position="top-center"
-          reverseOrder={false}
-          toastOptions={{
-            style: { fontFamily: 'Oswald, sans-serif', fontSize: '15px' },
-            success: { iconTheme: { primary: '#0fe312ff', secondary: '#fff' } },
-          }}
-        />
       </AuthProvider>
     </ThemeProvider>
   );

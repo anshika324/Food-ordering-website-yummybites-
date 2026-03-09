@@ -72,7 +72,8 @@ const Navbar = () => {
     if (password.length < 6)          { toast.error("Password must be at least 6 characters."); return; }
     setSubmitting(true);
     try {
-      await login(email.trim(), password);
+      const loggedUser = await login(email.trim(), password);
+      toast.success(`Welcome back, ${loggedUser?.name || email.split("@")[0]}! 👋`);
       setShowModal(false);
       setEmail(""); setPassword("");
     } catch (err) {
@@ -89,6 +90,7 @@ const Navbar = () => {
     setSubmitting(true);
     try {
       await signup(name.trim(), email.trim(), password);
+      toast.success(`Account created! Welcome to YummyBites, ${name.trim()}! 🎉`);
       setIsLogin(true);
       setName(""); setEmail(""); setPassword("");
     } catch (err) {
@@ -106,7 +108,9 @@ const Navbar = () => {
     navigate("/");
   };
 
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const isAdmin = user?.email?.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim();
+  // Debug: remove after confirming admin works
+  if (user) console.log("[Admin check]", user.email, "vs", ADMIN_EMAIL, "→", isAdmin);
 
   return (
     <>
